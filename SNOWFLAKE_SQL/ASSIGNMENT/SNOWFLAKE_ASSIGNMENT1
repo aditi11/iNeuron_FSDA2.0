@@ -1,0 +1,129 @@
+--1. Load the given dataset into snowflake with a primary key to Order Date column
+CREATE OR REPLACE TABLE AS_SALES_DATA_FINAL
+(
+    order_id VARCHAR(20),
+    order_date DATE PRIMARY KEY,
+    ship_date DATE,
+    ship_mode CHAR(20),
+    customer_name CHAR(50),
+    segment CHAR(20),
+    state CHAR(50),
+    country CHAR(50),
+    market CHAR(15),
+    region CHAR(30),
+    product_id VARCHAR(50),
+    category CHAR(50),
+    sub_category CHAR(50),
+    product_name VARCHAR(200),
+    sales INT,
+    quantity INT,
+    discount NUMBER(4,3),
+    profit NUMBER(10,3),
+    shipping_cost NUMBER(6,2),
+    order_priority CHAR(10),
+    order_year int 
+);
+
+DESC TABLE AS_SALES_DATA_FINAL;
+SELECT * FROM AS_SALES_DATA_FINAL;
+
+--2. Change the Primary key to Order Id Column.
+ALTER TABLE AS_SALES_DATA_FINAL
+DROP PRIMARY KEY;
+
+ALTER TABLE AS_SALES_DATA_FINAL
+ADD PRIMARY KEY(order_id);
+
+
+--3. Check the data type for Order date and Ship date and mention in what data type 
+--it should be?
+/*Data type changed in csv file using formula DATE(RIGHT(B5149,4),LEFT(B5149,1),MID(B5149,3,2))
+and loaded the Order date and Ship date with data type as DATE.*/
+
+--4. Create a new column called order_extract and extract the number after the last 
+--‘–‘from Order ID column.
+
+SELECT order_id ,RIGHT(ORDER_ID,(LENGTH(ORDER_ID)-8)) AS order_extract FROM AS_SALES_DATA_FINAL;
+
+--5. Create a new column called Discount Flag and categorize it based on discount. 
+--Use ‘Yes’ if the discount is greater than zero else ‘No’.
+
+SELECT discount,
+       CASE WHEN DISCOUNT > 0 THEN 'YES'
+            ELSE 'No'
+            END AS Discount_Flag
+FROM AS_SALES_DATA_FINAL;
+
+--6. Create a new column called process days and calculate how many days it takes 
+--for each order id to process from the order to its shipment.
+
+SELECT order_date,ship_date,DATEDIFF(day,order_date,ship_date) AS Days_to_Process_Order FROM AS_SALES_DATA_FINAL;  
+
+/*7. Create a new column called Rating and then based on the Process dates give 
+rating like given below.
+a. If process days less than or equal to 3days then rating should be 5
+b. If process days are greater than 3 and less than or equal to 6 then rating 
+should be 4
+c. If process days are greater than 6 and less than or equal to 10 then rating 
+should be 3
+d. If process days are greater than 10 then the rating should be 2.*/
+
+SELECT   
+    order_date,ship_date,DATEDIFF(day,order_date,ship_date) AS Days_to_Process_Order,
+    CASE WHEN Days_to_Process_Order <= 3 THEN 5
+         WHEN Days_to_Process_Order <= 6 AND Days_to_Process_Order > 3 THEN 4
+         WHEN Days_to_Process_Order < 10 AND Days_to_Process_Order > 6 THEN 3
+         WHEN Days_to_Process_Order > 10 THEN 2
+     END AS Rating
+FROM AS_SALES_DATA_FINAL;
+
+
+--Created view to collate all the requirement into single query.
+
+CREATE VIEW AS_SALES_DATA_FINAL_MASTER
+AS
+SELECT   
+    order_id ,RIGHT(ORDER_ID,(LENGTH(ORDER_ID)-8)) AS order_no,
+    order_date,ship_date,DATEDIFF(day,order_date,ship_date) AS Days_to_Process_Order,
+    CASE WHEN Days_to_Process_Order <= 3 THEN 5
+         WHEN Days_to_Process_Order <= 6 AND Days_to_Process_Order > 3 THEN 4
+         WHEN Days_to_Process_Order < 10 AND Days_to_Process_Order > 6 THEN 3
+         WHEN Days_to_Process_Order > 10 THEN 2
+     END AS Order_Process_Ratings,
+    ship_mode,
+    customer_name,
+    segment,
+    state,
+    country,
+    market,
+    region,
+    product_id,
+    category,
+    sub_category,
+    product_name,
+    sales,
+    quantity,
+    discount,
+    CASE WHEN DISCOUNT > 0 THEN 'YES'
+         ELSE 'FALSE'
+         END AS discount_flg,
+    profit,
+    shipping_cost,
+    order_priority,
+    order_year
+FROM AS_SALES_DATA_FINAL;
+
+
+SELECT * FROM AS_SALES_DATA_FINAL_MASTER;
+
+
+
+
+
+
+
+
+
+
+
+
